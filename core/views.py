@@ -1,5 +1,6 @@
 import secrets
 from django.contrib.auth.decorators import user_passes_test
+# pyrefly: ignore[missing-import]
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -9,7 +10,6 @@ from .models import AdminAccount
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -44,150 +44,262 @@ def dashboard(request):
     return render(request, 'core/dashboard.html')
 
 
+
 @user_passes_test(
     lambda user: user.is_authenticated and user.is_active and user.is_superuser,
     login_url='login'
 )
 def register_view(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        confirm_password = request.POST.get('confirm_password')
 
-        if password != confirm_password:
+    if request.method == 'POST':
+
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        if not username or not email or not password:
+            messages.error(request, 'All fields are required.')
+
+        elif password != confirm_password:
             messages.error(request, 'Passwords do not match.')
+
         elif User.objects.filter(username=username).exists():
             messages.error(request, 'Username already exists.')
-        elif User.objects.filter(email=email).exists():
+
+        elif User.objects.filter(email__iexact=email).exists():
             messages.error(request, 'Email already exists.')
+
+        elif AdminAccount.objects.filter(email__iexact=email).exists():
+            messages.error(request, 'Admin account already exists.')
+
         else:
-            User.objects.create_user(
-                username=username,
-                email=email,
-                password=password,
-                is_staff=True
-            )
+            try:
+                validate_password(password)
 
-            AdminAccount.objects.create(
-                username=username,
-                email=email,
-                password=make_password(password)
-            )
+            except ValidationError as errors:
+                for error in errors:
+                    messages.error(request, error)
 
-            messages.success(request, 'Admin registered successfully.')
-            return redirect('login')
+            else:
+                User.objects.create_user(
+                    username=username,
+                    email=email,
+                    password=password,
+                    is_staff=True
+                )
 
+                AdminAccount.objects.create(
+                    username=username,
+                    email=email,
+                    password=make_password(password)
+                )
+
+                messages.success(
+                    request,
+                    'Admin registered successfully.'
+                )
+                return redirect('login')
+
+    # IMPORTANT: This return must be outside the POST condition.
     return render(request, 'core/register.html')
+
 
 def forgot_password(request):
     if request.method == 'POST':
+
         action = request.POST.get('action')
 
         if action == 'send_otp':
-            email = request.POST.get('email')
-            admin = AdminAccount.objects.filter(email=email).first()
+            email = request.POST.get('email', '').strip()
 
-            if admin:
-                otp = secrets.randbelow(900000) + 100000
-                
-                request.session['reset_otp'] = make_password(str(otp))
-                request.session['reset_email'] = email
-                request.session['reset_stage'] = 'otp'
-                request.session['otp_attempts'] = 0
-                request.session.set_expiry(300)
+            # Clear any previous reset attempt
+            for key in [
+                'reset_otp',
+                'reset_email',
+                'reset_stage',
+                'otp_attempts'
+            ]:
+                request.session.pop(key, None)
 
-                send_mail(
-                    'Taxi Booking System - Password Reset OTP',
-                    f'Your password reset OTP is: {otp}',
-                    'admin@taxibooking.com',
-                    [email],
-                    fail_silently=False,
-                )
+            # Search Django User, not only AdminAccount
+            user = User.objects.filter(
+                email__iexact=email,
+                is_staff=True,
+                is_active=True
+            ).first()
 
-                messages.success(request, 'OTP sent successfully. Check your terminal.')
-            else:
+            if not user:
                 messages.error(request, 'Admin email not found.')
 
+            else:
+                otp = secrets.randbelow(900000) + 100000
+
+                try:
+                    send_mail(
+                        'Taxi Booking System - Password Reset OTP',
+                        f'Your password reset OTP is: {otp}',
+                        'admin@taxibooking.com',
+                        [user.email],
+                        fail_silently=False,
+                    )
+
+                    request.session['reset_otp'] = make_password(str(otp))
+                    request.session['reset_email'] = user.email
+                    request.session['reset_stage'] = 'otp'
+                    request.session['otp_attempts'] = 0
+                    request.session.set_expiry(300)
+
+                    messages.success(
+                        request,
+                        'OTP generated successfully. Check the terminal.'
+                    )
+
+                except Exception:
+                    messages.error(
+                        request,
+                        'Unable to generate OTP. Please try again.'
+                    )
+
         elif action == 'verify_otp':
-            entered_otp = request.POST.get('otp')
+
+            if (
+                request.session.get('reset_stage') != 'otp'
+                or not request.session.get('reset_otp')
+                or not request.session.get('reset_email')
+            ):
+                messages.error(
+                    request,
+                    'Please request a new OTP.'
+                )
+                return redirect('forgot_password')
+
+            entered_otp = request.POST.get('otp', '').strip()
             attempts = request.session.get('otp_attempts', 0)
 
             if attempts >= 5:
-                request.session.pop('reset_otp', None)
-                request.session.pop('reset_email', None)
-                request.session.pop('reset_stage', None)
-                request.session.pop('otp_attempts', None)
-
-                messages.error(request, 'Too many incorrect attempts. Please request a new OTP.')
+                request.session.flush()
+                messages.error(
+                    request,
+                    'Too many attempts. Please request a new OTP.'
+                )
                 return redirect('forgot_password')
 
-            if entered_otp and check_password(entered_otp,
-                request.session.get('reset_otp', '')
+            if (
+                len(entered_otp) == 6
+                and entered_otp.isdigit()
+                and check_password(
+                    entered_otp,
+                    request.session.get('reset_otp')
+                )
             ):
                 request.session['reset_stage'] = 'reset'
                 request.session.pop('otp_attempts', None)
 
-                messages.success(request, 'OTP verified successfully.')
+                messages.success(
+                    request,
+                    'OTP verified successfully.'
+                )
 
             else:
                 attempts += 1
                 request.session['otp_attempts'] = attempts
 
                 if attempts >= 5:
-                    request.session.pop('reset_otp', None)
-                    request.session.pop('reset_email', None)
-                    request.session.pop('reset_stage', None)
-                    request.session.pop('otp_attempts', None)
+                    for key in [
+                        'reset_otp',
+                        'reset_email',
+                        'reset_stage',
+                        'otp_attempts'
+                    ]:
+                        request.session.pop(key, None)
 
-                    messages.error(request, 'Too many incorrect attempts. Please request a new OTP.')
+                    messages.error(
+                        request,
+                        'Too many incorrect attempts. Request a new OTP.'
+                    )
                     return redirect('forgot_password')
 
                 messages.error(
                     request,
                     f'Incorrect OTP. {5 - attempts} attempts remaining.'
-                )            
+                )
+
         elif action == 'reset_password':
-            password = request.POST.get('password')
-            confirm_password = request.POST.get('confirm_password')
 
-            if request.session.get('reset_stage') != 'reset':
-                messages.error(request, 'Please verify your OTP first.')
+            password = request.POST.get('password', '')
+            confirm_password = request.POST.get('confirm_password', '')
 
-            elif password != confirm_password:
-                messages.error(request, 'Passwords do not match.')
+            if (
+                request.session.get('reset_stage') != 'reset'
+                or not request.session.get('reset_email')
+            ):
+                messages.error(
+                    request,
+                    'Please verify your OTP first.'
+                )
+                return redirect('forgot_password')
+
+            elif not password or password != confirm_password:
+                messages.error(
+                    request,
+                    'Passwords do not match or are empty.'
+                )
 
             else:
                 email = request.session.get('reset_email')
-                admin = AdminAccount.objects.filter(email=email).first()
 
-                if admin:
-                    user = User.objects.filter(username=admin.username).first()
+                user = User.objects.filter(
+                    email__iexact=email,
+                    is_staff=True,
+                    is_active=True
+                ).first()
 
-                    if user:
-                        try:
-                            validate_password(password, user)
-                        except ValidationError as errors:
-                            for error in errors:
-                                messages.error(request, error)
-                        else:
-                            user.set_password(password)
-                            user.save()
+                if not user:
+                    messages.error(
+                        request,
+                        'Admin account not found.'
+                    )
 
+                else:
+                    try:
+                        validate_password(password, user)
+
+                    except ValidationError as errors:
+                        for error in errors:
+                            messages.error(request, error)
+
+                    else:
+                        user.set_password(password)
+                        user.save()
+
+                        # Update custom account if it exists
+                        admin = AdminAccount.objects.filter(
+                            username=user.username
+                        ).first()
+
+                        if admin:
                             admin.password = make_password(password)
                             admin.save()
 
-                            for key in ['reset_otp', 'reset_email', 'reset_stage', 'otp_attempts']:
-                                request.session.pop(key, None)
+                        for key in [
+                            'reset_otp',
+                            'reset_email',
+                            'reset_stage',
+                            'otp_attempts'
+                        ]:
+                            request.session.pop(key, None)
 
-                            messages.success(request, 'Password reset successfully.')
-                            return redirect('login')
-                    else:
-                        messages.error(request, 'Admin account not found.')
-                else:
-                    messages.error(request, 'Admin account not found.')
+                        messages.success(
+                            request,
+                            'Password reset successfully. Please log in.'
+                        )
+                        return redirect('login')
+
+    stage = request.session.get('reset_stage', 'email')
 
     return render(request, 'core/forgot_password.html', {
-        'stage': request.session.get('reset_stage', 'email'),
+        'stage': stage,
         'email': request.session.get('reset_email', ''),
     })
+
