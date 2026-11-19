@@ -1,228 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard | Taxi Booking System</title>
+{% extends 'core/base.html' %}
 
-    <style>
-        * {
-            box-sizing: border-box;
-        }
+{% block title %}Dashboard | Taxi Booking{% endblock %}
 
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f9;
-            color: #1f2937;
-        }
+{% block content %}
 
-        /* Navbar */
-        .navbar {
-            background: #111827;
-            color: white;
-            padding: 0 6%;
-            min-height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
+<div class="container py-4">
 
-        .logo {
-            font-size: 21px;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-        }
+    <!-- Welcome Section -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-4">
 
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            gap: 28px;
-        }
+            <h3 class="fw-semibold mb-2">
+                Welcome, {{ request.user.get_full_name|default:request.user.username }}
+            </h3>
 
-        .nav-item {
-            color: #d1d5db;
-            font-size: 14px;
-            text-decoration: none;
-        }
-
-        .nav-item.active {
-            color: white;
-            font-weight: bold;
-        }
-
-        .nav-item.disabled {
-            cursor: default;
-        }
-
-        .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 9px 17px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .logout-btn:hover {
-            background: #b91c1c;
-        }
-
-        /* Mobile menu button */
-        .menu-toggle {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 27px;
-            cursor: pointer;
-        }
-
-        /* Dashboard content */
-        .dashboard-container {
-            padding: 40px 6%;
-        }
-
-        .welcome-section {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-
-        .welcome-section h1 {
-            margin-top: 0;
-            font-size: 25px;
-        }
-
-        .welcome-section p {
-            color: #6b7280;
-            margin-bottom: 0;
-        }
-
-        /* Responsive design */
-        @media (max-width: 768px) {
-            .navbar {
-                position: relative;
-                min-height: 65px;
-                flex-wrap: wrap;
-            }
-
-            .menu-toggle {
-                display: block;
-            }
-
-            .nav-menu {
-                display: none;
-                width: 100%;
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0;
-                padding: 10px 0 18px;
-            }
-
-            .nav-menu.show {
-                display: flex;
-            }
-
-            .nav-item {
-                width: 100%;
-                padding: 12px 0;
-            }
-
-            .logout-form {
-                width: 100%;
-                padding-top: 10px;
-            }
-
-            .logout-btn {
-                width: 100%;
-            }
-
-            .dashboard-container {
-                padding: 25px 5%;
-            }
-
-            .welcome-section {
-                padding: 22px;
-            }
-        }
-    </style>
-</head>
-
-<body>
-
-    <!-- Navbar -->
-    <nav class="navbar">
-
-        <div class="logo">
-            TAXI BOOKING
-        </div>
-
-        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle navigation" aria-expanded="false"
-            aria-controls="navMenu">
-            &#9776;
-        </button>
-
-        <div class="nav-menu" id="navMenu">
-
-            <span class="nav-item active">
-                Dashboard
-            </span>
-
-            <span class="nav-item disabled">
-                Drivers
-            </span>
-            
-            {% if request.user.is_superuser %}
-                <a href="{% url 'register' %}" class="nav-item">
-                    Register Admin
-                </a>
-            {% endif %}
-            
-            <span class="nav-item disabled">
-                Users
-            </span>
-
-            <span class="nav-item disabled">
-                Bookings
-            </span>
-
-            <form method="POST" action="{% url 'logout' %}" class="logout-form">
-                {% csrf_token %}
-                <button type="submit" class="logout-btn">
-                    Logout
-                </button>
-            </form>
+            <p class="text-muted mb-0">
+                Welcome to the Taxi Booking System Admin Dashboard.
+            </p>
 
         </div>
-    </nav>
+    </div>
 
-    <!-- Dashboard content -->
-    <main class="dashboard-container">
+    <!-- Admin Registration -->
+    {% if request.user.is_superuser %}
+    <div class="mt-4">
+        <a href="{% url 'register' %}" class="btn btn-primary">
+            Register Admin
+        </a>
+    </div>
+    {% endif %}
 
-        <section class="welcome-section">
-            <h1>Welcome, {{ request.user.username }}</h1>
-            <p>Welcome to the Taxi Booking System Admin Dashboard.</p>
-        </section>
+</div>
 
-    </main>
-
-    <!-- Mobile menu script -->
-    <script>
-        const menuToggle = document.getElementById('menuToggle');
-        const navMenu = document.getElementById('navMenu');
-
-        menuToggle.addEventListener('click', function () {
-            navMenu.classList.toggle('show');
-
-            const isExpanded = navMenu.classList.contains('show');
-            menuToggle.setAttribute('aria-expanded', isExpanded);
-        });
-    </script>
-
-</body>
-
-</html>
+{% endblock %}

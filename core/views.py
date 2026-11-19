@@ -10,6 +10,8 @@ from .models import AdminAccount
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required, user_passes_test
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -303,3 +305,37 @@ def forgot_password(request):
         'email': request.session.get('reset_email', ''),
     })
 
+
+
+# Allow only logged-in staff members
+admin_required = user_passes_test(
+    lambda user: user.is_authenticated and user.is_staff,
+    login_url='login'
+)
+
+
+@login_required(login_url='login')
+@admin_required
+def drivers_view(request):
+    return render(request, 'core/drivers.html', {
+        'page_title': 'Drivers',
+        'page_description': 'Manage and monitor registered drivers.'
+    })
+
+
+@login_required(login_url='login')
+@admin_required
+def users_view(request):
+    return render(request, 'core/users.html', {
+        'page_title': 'Users',
+        'page_description': 'View and manage registered users.'
+    })
+
+
+@login_required(login_url='login')
+@admin_required
+def bookings_view(request):
+    return render(request, 'core/bookings.html', {
+        'page_title': 'Bookings',
+        'page_description': 'View and manage taxi booking records.'
+    })
