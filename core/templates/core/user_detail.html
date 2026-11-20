@@ -1,0 +1,76 @@
+
+{% extends 'core/base.html' %}
+
+{% block title %}Customer Profile | Taxi Booking{% endblock %}
+
+{% block content %}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Customer Profile</h2>
+            <p class="text-muted mb-0">Detailed customer information</p>
+        </div>
+
+        <a href="{% url 'users' %}" class="btn btn-secondary">
+            Back to Users
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+
+            <h4 class="fw-bold mb-4">
+                {{ customer.name }}
+            </h4>
+
+            <div class="row g-4">
+
+                <div class="col-md-6">
+                    <label class="text-muted">Customer ID</label>
+                    <p class="fw-semibold">{{ customer.id }}</p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-muted">Full Name</label>
+                    <p class="fw-semibold">{{ customer.name }}</p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-muted">Email Address</label>
+                    <p class="fw-semibold">{{ customer.email }}</p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-muted">Mobile Number</label>
+                    <p class="fw-semibold">{{ customer.mobile }}</p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-muted">Registration Date</label>
+                    <p class="fw-semibold">
+                        {{ customer.created_at|date:"d M Y, h:i A" }}
+                    </p>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="text-muted">Account Type</label>
+                    <p class="fw-semibold">Customer</p>
+                </div>
+
+            </div>
+
+            <hr>
+
+            <a href="{% url 'user_edit' customer.id %}"
+               class="btn btn-primary">
+                Edit Customer
+            </a>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

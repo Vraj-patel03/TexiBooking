@@ -29,4 +29,8 @@ urlpatterns = [
     path('drivers/', views.drivers_view, name='drivers'),
     path('users/', views.users_view, name='users'),
     path('bookings/', views.bookings_view, name='bookings'),
+    path('users/<int:user_id>/edit/', views.user_edit, name='user_edit'),
+    path('users/<int:user_id>/delete/', views.user_delete, name='user_delete'),
+    path('users/<int:user_id>/', views.user_detail, name='user_detail'),
+    path('users/add/', views.user_create, name='user_create'),
 ]

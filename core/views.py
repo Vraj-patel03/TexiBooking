@@ -6,11 +6,14 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
-from .models import AdminAccount
+from .models import AdminAccount, Customer
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect, get_object_or_404
+
+
 
 
 def login_view(request):
@@ -325,10 +328,99 @@ def drivers_view(request):
 
 @login_required(login_url='login')
 @admin_required
+def user_create(request):
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        mobile = request.POST.get('mobile', '').strip()
+        password = request.POST.get('password', '')
+
+        if not name or not email or not mobile or not password:
+            messages.error(request, 'All fields are required.')
+
+        elif Customer.objects.filter(email__iexact=email).exists():
+            messages.error(request, 'Email already exists.')
+
+        else:
+            customer = Customer(
+                name=name,
+                email=email,
+                mobile=mobile
+            )
+
+            customer.set_password(password)
+            customer.save()
+
+            messages.success(request, 'Customer added successfully.')
+            return redirect('users')
+
+    return render(request, 'core/user_create.html')
+
+
+@login_required(login_url='login')
+@admin_required
+def user_edit(request, user_id):
+    customer = get_object_or_404(Customer, id=user_id)
+
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip()
+        mobile = request.POST.get('mobile', '').strip()
+        password = request.POST.get('password', '')
+
+        if not name or not email or not mobile:
+            messages.error(request, 'All fields are required.')
+
+        elif Customer.objects.filter(email__iexact=email).exclude(id=user_id).exists():
+            messages.error(request, 'Email already exists.')
+
+        else:
+            customer.name = name
+            customer.email = email
+            customer.mobile = mobile
+
+            if password:
+                customer.set_password(password)
+
+            customer.save()
+
+            messages.success(request, 'Customer updated successfully.')
+            return redirect('users')
+
+    return render(request, 'core/user_edit.html', {
+        'customer': customer
+    })
+
+
+@login_required(login_url='login')
+@admin_required
+def user_delete(request, user_id):
+    customer = get_object_or_404(Customer, id=user_id)
+
+    if request.method == 'POST':
+        customer.delete()
+        messages.success(request, 'Customer deleted successfully.')
+
+    return redirect('users')
+
+
+@login_required(login_url='login')
+@admin_required
 def users_view(request):
+    customers = Customer.objects.all().order_by('-created_at')
+
     return render(request, 'core/users.html', {
-        'page_title': 'Users',
-        'page_description': 'View and manage registered users.'
+        'customers': customers
+    })
+
+@login_required(login_url='login')
+@admin_required
+def user_detail(request, user_id):
+    customer = get_object_or_404(Customer, id=user_id)
+
+    return render(request, 'core/user_detail.html', {
+        'customer': customer
     })
 
 
