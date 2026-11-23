@@ -1,18 +1,17 @@
 import secrets
-from django.contrib.auth.decorators import user_passes_test
 # pyrefly: ignore[missing-import]
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
-from .models import AdminAccount, Customer
+from .models import AdminAccount, Customer, Driver
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.db.models import Q
 
 
 
@@ -46,7 +45,11 @@ def dashboard(request):
     if not request.user.is_authenticated or not request.user.is_staff:
         return redirect('login')
 
-    return render(request, 'core/dashboard.html')
+    drivers_count = Driver.objects.count()
+
+    return render(request, 'core/dashboard.html', {
+        'drivers_count': drivers_count,
+    })
 
 
 
@@ -320,11 +323,11 @@ admin_required = user_passes_test(
 @login_required(login_url='login')
 @admin_required
 def drivers_view(request):
-    return render(request, 'core/drivers.html', {
-        'page_title': 'Drivers',
-        'page_description': 'Manage and monitor registered drivers.'
-    })
+    drivers = Driver.objects.all().order_by('-created_at')
 
+    return render(request, 'core/drivers.html', {
+        'drivers': drivers
+    })
 
 @login_required(login_url='login')
 @admin_required
@@ -408,11 +411,24 @@ def user_delete(request, user_id):
 @login_required(login_url='login')
 @admin_required
 def users_view(request):
-    customers = Customer.objects.all().order_by('-created_at')
+
+    search_query = request.GET.get('search', '').strip()
+
+    customers = Customer.objects.all()
+
+    if search_query:
+        customers = customers.filter(
+            Q(name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    customers = customers.order_by('-created_at')
 
     return render(request, 'core/users.html', {
-        'customers': customers
+        'customers': customers,
+        'search_query': search_query
     })
+
 
 @login_required(login_url='login')
 @admin_required

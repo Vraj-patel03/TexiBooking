@@ -7,14 +7,17 @@
 
 <div class="container-fluid py-4">
 
-    <h2 class="fw-bold">Users</h2>
-    <p class="text-muted">Manage registered customers.</p>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="fw-bold">Users</h2>
+            <p class="text-muted">Manage registered customers.</p>
+        </div>
 
+        <a href="{% url 'user_create' %}" class="btn btn-primary">
+            + Add New User
+        </a>
+    </div>
 
-    <a href="{% url 'user_create' %}" class="btn btn-primary">
-        + Add New User
-    </a>
-    
     {% if messages %}
         {% for message in messages %}
             <div class="alert alert-info">
@@ -23,7 +26,36 @@
         {% endfor %}
     {% endif %}
 
-    <div class="card border-0 shadow-sm mt-4">
+    <!-- Search Users -->
+    <form method="GET" action="{% url 'users' %}" class="mb-4">
+        <div class="row g-2">
+
+            <div class="col-md-5">
+                <input
+                    type="text"
+                    name="search"
+                    class="form-control"
+                    placeholder="Search by name or email..."
+                    value="{{ search_query }}"
+                >
+            </div>
+
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    Search
+                </button>
+            </div>
+
+            <div class="col-auto">
+                <a href="{% url 'users' %}" class="btn btn-secondary">
+                    Reset
+                </a>
+            </div>
+
+        </div>
+    </form>
+
+    <div class="card border-0 shadow-sm">
         <div class="card-body">
 
             <h5 class="mb-3">Customer List</h5>
@@ -53,7 +85,7 @@
 
                             <td>
                                 <a href="{% url 'user_detail' customer.id %}"
-                                    class="btn btn-sm btn-info text-white">
+                                   class="btn btn-sm btn-info text-white">
                                     View
                                 </a>
 
@@ -79,7 +111,7 @@
                         {% empty %}
                         <tr>
                             <td colspan="6" class="text-center text-muted py-4">
-                                No customers registered yet.
+                                No customers found.
                             </td>
                         </tr>
                         {% endfor %}
