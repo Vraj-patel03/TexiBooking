@@ -14,6 +14,24 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
 
 
+# Allow only logged-in staff members
+admin_required = user_passes_test(
+    lambda user: user.is_authenticated and user.is_staff,
+    login_url='login'
+)
+
+
+@login_required(login_url='login')
+@admin_required
+def dashboard(request):
+    drivers = Driver.objects.all().order_by('-created_at')
+
+    return render(request, 'core/dashboard.html', {
+        'drivers': drivers,
+        'drivers_count': drivers.count(),
+    })
+
+
 
 def login_view(request):
     if request.user.is_authenticated:
@@ -39,18 +57,6 @@ def logout_view(request):
         logout(request)
 
     return redirect('login')
-
-
-def dashboard(request):
-    if not request.user.is_authenticated or not request.user.is_staff:
-        return redirect('login')
-
-    drivers_count = Driver.objects.count()
-
-    return render(request, 'core/dashboard.html', {
-        'drivers_count': drivers_count,
-    })
-
 
 
 @user_passes_test(
@@ -311,23 +317,49 @@ def forgot_password(request):
         'email': request.session.get('reset_email', ''),
     })
 
+@login_required(login_url='login')
+@admin_required
+def driver_delete(request, driver_id):
+    driver = get_object_or_404(Driver, id=driver_id)
+
+    if request.method == 'POST':
+        driver.delete()
+        messages.success(request, 'Driver deleted successfully.')
+
+    return redirect('drivers')
 
 
-# Allow only logged-in staff members
-admin_required = user_passes_test(
-    lambda user: user.is_authenticated and user.is_staff,
-    login_url='login'
-)
+@login_required(login_url='login')
+@admin_required
+def driver_detail(request, driver_id):
+    driver = get_object_or_404(Driver, id=driver_id)
+
+    return render(request, 'core/driver_detail.html', {
+        'driver': driver,
+        'bookings': [],
+    })
 
 
 @login_required(login_url='login')
 @admin_required
 def drivers_view(request):
-    drivers = Driver.objects.all().order_by('-created_at')
+    search_query = request.GET.get('search', '').strip()
+
+    drivers = Driver.objects.all()
+
+    if search_query:
+        drivers = drivers.filter(
+            Q(name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    drivers = drivers.order_by('-created_at')
 
     return render(request, 'core/drivers.html', {
-        'drivers': drivers
+        'drivers': drivers,
+        'search_query': search_query
     })
+
 
 @login_required(login_url='login')
 @admin_required

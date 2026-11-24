@@ -27,10 +27,13 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('forgot-password/', views.forgot_password, name='forgot_password'),
     path('drivers/', views.drivers_view, name='drivers'),
+    path('drivers/<int:driver_id>/delete/', views.driver_delete, name='driver_delete'),
+    path('drivers/<int:driver_id>/', views.driver_detail, name='driver_detail'),
     path('users/', views.users_view, name='users'),
     path('bookings/', views.bookings_view, name='bookings'),
     path('users/<int:user_id>/edit/', views.user_edit, name='user_edit'),
     path('users/<int:user_id>/delete/', views.user_delete, name='user_delete'),
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
     path('users/add/', views.user_create, name='user_create'),
+    
 ]
