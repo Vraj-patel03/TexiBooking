@@ -479,3 +479,34 @@ def bookings_view(request):
         'page_title': 'Bookings',
         'page_description': 'View and manage taxi booking records.'
     })
+
+
+def customer_register(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+        mobile = request.POST.get('mobile', '').strip()
+
+        if not all([name, email, password, mobile]):
+            messages.error(request, 'All fields are required.')
+
+        elif len(password) < 8:
+            messages.error(request, 'Password must be at least 8 characters.')
+
+        elif Customer.objects.filter(email__iexact=email).exists():
+            messages.error(request, 'Email is already registered.')
+
+        else:
+            customer = Customer(
+                name=name,
+                email=email,
+                mobile=mobile
+            )
+            customer.set_password(password)
+            customer.save()
+
+            messages.success(request, 'Registration successful!')
+            return redirect('customer_register')
+
+    return render(request, 'core/customer_register.html')
