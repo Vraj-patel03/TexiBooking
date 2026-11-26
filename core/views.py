@@ -481,6 +481,56 @@ def bookings_view(request):
     })
 
 
+def customer_login(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+
+        if not email or not password:
+            messages.error(request, 'Email and password are required.')
+
+        else:
+            customer = Customer.objects.filter(
+                email__iexact=email
+            ).first()
+
+            if customer and customer.check_password(password):
+                request.session.cycle_key()
+                request.session['customer_id'] = customer.id
+
+                return redirect('customer_dashboard')
+
+            messages.error(request, 'Invalid email or password.')
+
+    return render(request, 'core/customer_login.html')
+
+
+def customer_dashboard(request):
+    customer_id = request.session.get('customer_id')
+
+    if not customer_id:
+        return redirect('customer_login')
+
+    customer = Customer.objects.filter(id=customer_id).first()
+
+    if not customer:
+        request.session.pop('customer_id', None)
+        return redirect('customer_login')
+
+    return render(request, 'core/customer_dashboard.html', {
+        'customer': customer
+    })
+
+
+def customer_logout(request):
+    if request.method == 'POST':
+        request.session.pop('customer_id', None)
+        messages.success(request, 'You have logged out successfully.')
+
+    return redirect('customer_login')
+
+
+
 def customer_register(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()

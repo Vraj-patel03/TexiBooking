@@ -36,5 +36,8 @@ urlpatterns = [
     path('users/<int:user_id>/', views.user_detail, name='user_detail'),
     path('users/add/', views.user_create, name='user_create'),
     path('customer-register/', views.customer_register, name='customer_register'),
+    path('customer-login/', views.customer_login, name='customer_login'),
+    path('customer/dashboard/', views.customer_dashboard, name='customer_dashboard'),
+    path('customer-logout/', views.customer_logout, name='customer_logout'),
     
 ]

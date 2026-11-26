@@ -1,0 +1,105 @@
+
+{% extends 'core/base.html' %}
+
+{% block title %}My Dashboard | Taxi Booking{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <!-- Welcome Section -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+        <div>
+            <h2 class="fw-bold">Welcome, {{ customer.name }}!</h2>
+            <p class="text-muted mb-0">
+                Manage your taxi booking account.
+            </p>
+        </div>
+
+        <form method="POST" action="{% url 'customer_logout' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger">
+                Logout
+            </button>
+        </form>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="row g-4 mb-4">
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted">Account Status</h6>
+                    <h4 class="fw-bold text-success">Active</h4>
+                    <p class="text-muted mb-0">
+                        Your account is registered.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted">My Bookings</h6>
+                    <h4 class="fw-bold">0</h4>
+                    <p class="text-muted mb-0">
+                        No booking history yet.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4">
+                    <h6 class="text-muted">Member Since</h6>
+                    <h4 class="fw-bold">
+                        {{ customer.created_at|date:"d M Y" }}
+                    </h4>
+                    <p class="text-muted mb-0">
+                        Registration date
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Profile Details -->
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+
+            <h5 class="fw-bold mb-4">My Profile</h5>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Full Name</small>
+                    <p class="fw-semibold">{{ customer.name }}</p>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Email Address</small>
+                    <p class="fw-semibold">{{ customer.email }}</p>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Phone Number</small>
+                    <p class="fw-semibold">{{ customer.mobile }}</p>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <small class="text-muted">Account Created</small>
+                    <p class="fw-semibold">
+                        {{ customer.created_at|date:"d M Y" }}
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
