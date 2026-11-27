@@ -29,6 +29,12 @@
                         {% endfor %}
                     {% endif %}
 
+                    <div class="text-end mb-3">
+                        <a href="{% url 'customer_forgot_password' %}"class="text-decoration-none">
+                            Forgot Password?
+                        </a>
+                    </div>
+
                     <form method="POST">
                         {% csrf_token %}
 

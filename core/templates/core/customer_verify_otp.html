@@ -1,0 +1,65 @@
+
+{% extends 'core/base.html' %}
+
+{% block title %}Verify OTP | Taxi Booking{% endblock %}
+
+{% block content %}
+
+<div class="container d-flex justify-content-center align-items-center py-5">
+
+    <div class="card shadow-sm border-0 rounded-4 p-4"
+         style="width: 100%; max-width: 430px;">
+
+        <div class="text-center mb-4">
+            <h3 class="fw-bold">Verify OTP</h3>
+            <p class="text-muted">
+                Enter the six-digit OTP displayed in your email.
+            </p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">
+                    Enter OTP
+                </label>
+
+                <input
+                    type="text"
+                    name="otp"
+                    class="form-control text-center"
+                    placeholder="Enter 6-digit OTP"
+                    maxlength="6"
+                    pattern="[0-9]{6}"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+                Verify OTP
+            </button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'customer_forgot_password' %}"
+               class="text-decoration-none">
+                Request New OTP
+            </a>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

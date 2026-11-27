@@ -39,5 +39,7 @@ urlpatterns = [
     path('customer-login/', views.customer_login, name='customer_login'),
     path('customer/dashboard/', views.customer_dashboard, name='customer_dashboard'),
     path('customer-logout/', views.customer_logout, name='customer_logout'),
-    
+    path('customer-forgot-password/',views.customer_forgot_password,name='customer_forgot_password'),
+    path('customer-verify-otp/',views.customer_verify_otp,name='customer_verify_otp'),
+    path('customer-reset-password/',views.customer_reset_password,name='customer_reset_password'),
 ]

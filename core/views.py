@@ -5,13 +5,16 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.hashers import make_password, check_password
-from .models import AdminAccount, Customer, Driver
+from .models import AdminAccount, Customer, Driver, PasswordResetOTP
 from django.core.mail import send_mail
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q
+from datetime import timedelta
+from django.utils import timezone
+from django.conf import settings
 
 
 # Allow only logged-in staff members
@@ -528,6 +531,141 @@ def customer_logout(request):
         messages.success(request, 'You have logged out successfully.')
 
     return redirect('customer_login')
+
+
+
+def customer_reset_password(request):
+    customer_id = request.session.get('verified_reset_customer_id')
+
+    if not customer_id:
+        messages.error(request, 'Please verify your OTP first.')
+        return redirect('customer_forgot_password')
+
+    customer = Customer.objects.filter(id=customer_id).first()
+
+    if not customer:
+        request.session.pop('verified_reset_customer_id', None)
+        request.session.pop('customer_reset_id', None)
+        return redirect('customer_forgot_password')
+
+    if request.method == 'POST':
+        password = request.POST.get('password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        if not password or not confirm_password:
+            messages.error(request, 'Both password fields are required.')
+
+        elif len(password) < 8:
+            messages.error(request, 'Password must be at least 8 characters.')
+
+        elif password != confirm_password:
+            messages.error(request, 'Passwords do not match.')
+
+        else:
+            customer.set_password(password)
+            customer.save(update_fields=['password'])
+
+            request.session.pop('verified_reset_customer_id', None)
+            request.session.pop('customer_reset_id', None)
+
+            messages.success(
+                request,
+                'Password reset successfully. Please log in.'
+            )
+            return redirect('customer_login')
+
+    return render(request, 'core/customer_reset_password.html')
+
+
+def customer_verify_otp(request):
+    customer_id = request.session.get('customer_reset_id')
+
+    if not customer_id:
+        messages.error(request, 'Please request a new OTP.')
+        return redirect('customer_forgot_password')
+
+    if request.method == 'POST':
+        otp = request.POST.get('otp', '').strip()
+
+        otp_record = PasswordResetOTP.objects.filter(
+            customer_id=customer_id,
+            is_used=False
+        ).order_by('-created_at').first()
+
+        if not otp_record:
+            messages.error(request, 'No valid OTP found. Request a new OTP.')
+
+        elif timezone.now() > otp_record.expires_at:
+            messages.error(request, 'OTP has expired. Request a new OTP.')
+
+        elif not check_password(otp, otp_record.otp_hash):
+            messages.error(request, 'Invalid OTP. Please try again.')
+
+        else:
+            otp_record.is_used = True
+            otp_record.save(update_fields=['is_used'])
+
+            request.session['verified_reset_customer_id'] = customer_id
+            return redirect('customer_reset_password')
+
+    return render(request, 'core/customer_verify_otp.html')
+
+
+
+def customer_forgot_password(request):
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+
+        if not email:
+            messages.error(request, 'Please enter your email address.')
+            return render(request, 'core/customer_forgot_password.html')
+
+        customer = Customer.objects.filter(email__iexact=email).first()
+
+        if not customer:
+            messages.error(
+                request,
+                'If your account exists, a password reset OTP has been sent.'
+            )
+            return render(request, 'core/customer_forgot_password.html')
+
+        PasswordResetOTP.objects.filter(
+            customer=customer,
+            is_used=False
+        ).delete()
+
+        otp = f"{secrets.randbelow(1000000):06d}"
+
+        otp_record = PasswordResetOTP.objects.create(
+            customer=customer,
+            otp_hash=make_password(otp),
+            expires_at=timezone.now() + timedelta(minutes=5)
+        )
+
+        try:
+            send_mail(
+                subject='Customer Password Reset OTP',
+                message=(
+                    f'Your password reset OTP is {otp}. '
+                    'It is valid for 5 minutes.'
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL or None,
+                recipient_list=[customer.email],
+                fail_silently=False,
+            )
+
+            request.session['customer_reset_id'] = customer.id
+
+            return redirect('customer_verify_otp')
+
+        except Exception:
+            otp_record.delete()
+            messages.error(
+                request,
+                'Unable to send OTP. Please try again.'
+            )
+
+    return render(request, 'core/customer_forgot_password.html')
 
 
 

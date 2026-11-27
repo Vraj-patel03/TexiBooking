@@ -1,86 +1,172 @@
 # Taxi Booking System
 
-A Django-based admin authentication starter project with an admin dashboard, restricted admin registration, and an email-OTP password reset flow.
+A web-based Taxi Booking System built with **Python, Django, Bootstrap,
+and SQLite**. The project includes separate admin and customer
+workflows, customer registration and authentication, and management
+pages for customers and drivers.
 
 ## Features
 
-- Admin login using Django authentication
-- Staff-only dashboard access
-- Superuser-only admin registration
-- Forgot-password flow on one page (email → OTP → new password)
-- Six-digit OTP generated with Python `secrets`
-- Hashed OTP stored in the Django session
-- Maximum of five incorrect OTP attempts
-- Django password validation during password reset
-- SQLite database for local development
-- Console email backend (OTP email is printed in the runserver terminal)
+### Admin Panel
+
+-   Admin login and logout.
+-   Staff-only access to the admin dashboard and management pages.
+-   Admin registration flow with restricted access.
+-   Forgot-password flow using email and a six-digit OTP.
+-   OTP stored as a hash in the Django session.
+-   Maximum of five incorrect OTP attempts.
+-   Password reset with Django password validation.
+
+### Customer Features
+
+-   Public customer registration.
+-   Registration fields: name, email, password, and phone number.
+-   Required-field, duplicate-email, and minimum password-length checks.
+-   Customer passwords stored using Django password hashing.
+-   Customer login using email and password.
+-   Session-based customer authentication.
+-   Separate customer dashboard showing account information.
+-   Customer logout.
+
+### Management Features
+
+-   Customer listing and customer search by name or email.
+-   Customer profile, create, edit, and delete pages.
+-   Driver listing and driver search by name or email.
+-   Driver profile page with personal information.
+-   Driver deletion.
+-   Driver list displayed on the admin dashboard.
+-   Booking history section in the driver profile currently displays an
+    empty-state message when no booking records are available.
+
+### Technology
+
+-   Python
+-   Django
+-   SQLite
+-   Bootstrap
+-   HTML and CSS
+
+## Project Structure
+
+``` text
+TaxiBookingSystem/
+├── config/
+│   ├── settings.py
+│   └── urls.py
+├── core/
+│   ├── migrations/
+│   ├── templates/
+│   │   └── core/
+│   ├── admin.py
+│   ├── models.py
+│   └── views.py
+├── manage.py
+├── requirements.txt
+└── README.md
+```
 
 ## Requirements
 
-- Python 3.12 or newer
-- pip
+-   Python 3.12 or newer
+-   pip
 
-## Setup (Windows PowerShell)
+## Setup on Windows (PowerShell)
 
-1. Open this project folder in VS Code.
-2. Create and activate a virtual environment:
+1.  Clone the repository:
 
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-   ```
+    ``` powershell
+    git clone https://github.com/Vraj-patel03/TexiBooking.git
+    cd TexiBooking
+    ```
 
-3. Install dependencies:
+2.  Create and activate a virtual environment:
 
-   ```powershell
-   pip install -r requirements.txt
-   ```
+    ``` powershell
+    python -m venv venv
+    .\venv\Scripts\Activate.ps1
+    ```
 
-4. Create a local secret key for your development session and set it in PowerShell:
+3.  Install project dependencies:
 
-   ```powershell
-   $env:DJANGO_SECRET_KEY = 'replace-this-with-a-long-random-secret'
-   ```
+    ``` powershell
+    pip install -r requirements.txt
+    ```
 
-5. Apply migrations:
+4.  Set a development secret key in the current PowerShell session:
 
-   ```powershell
-   python manage.py migrate
-   ```
+    ``` powershell
+    $env:DJANGO_SECRET_KEY = 'replace-this-with-a-long-random-secret'
+    ```
 
-6. Create the first superuser:
+5.  Apply database migrations:
 
-   ```powershell
-   python manage.py createsuperuser
-   ```
+    ``` powershell
+    python manage.py migrate
+    ```
 
-7. Start the development server:
+6.  Create a Django superuser if required by the admin setup:
 
-   ```powershell
-   python manage.py runserver
-   ```
+    ``` powershell
+    python manage.py createsuperuser
+    ```
 
-8. Open `http://127.0.0.1:8000/` in your browser. The OTP email content appears in the terminal because the project uses Django's console email backend.
+7.  Start the development server:
 
-## GitHub upload
+    ``` powershell
+    python manage.py runserver
+    ```
 
-Create an empty repository on GitHub. In this project folder, run:
+8.  Open the application:
 
-```powershell
-git init
-git add .
-git commit -m "Initial Taxi Booking System project"
-git branch -M main
-git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
-git push -u origin main
+    -   Admin login: `http://127.0.0.1:8000/`
+    -   Customer registration:
+        `http://127.0.0.1:8000/customer-register/`
+    -   Customer login: `http://127.0.0.1:8000/customer-login/`
+
+The forgot-password flow currently uses the Django console email backend
+in development, so OTP email content is printed in the runserver
+terminal.
+
+## Run Tests
+
+Run Django's system checks:
+
+``` powershell
+python manage.py check
 ```
 
-Replace the remote URL with your own GitHub repository URL.
+Run the project's tests:
 
-## Important security notes
+``` powershell
+python manage.py test
+```
 
-- This is a development project, not production-ready deployment configuration.
-- Do not commit `venv/`, `db.sqlite3`, `.env`, passwords, or secret keys. The included `.gitignore` excludes these local files.
-- Set `DJANGO_SECRET_KEY` through your environment before running the project.
-- `DEBUG` is enabled for local development. Turn it off and configure `ALLOWED_HOSTS`, HTTPS, secure cookies, and production email settings before deployment.
-- The current console email backend is for development/testing only. Configure a real email provider for deployment.
+## GitHub
+
+Repository: <https://github.com/Vraj-patel03/TexiBooking>
+
+To commit and push local changes:
+
+``` powershell
+git add .
+git commit -m "Describe your changes"
+git push origin main
+```
+
+## Security and Development Notes
+
+-   This project is intended for local development and learning; it is
+    not a production-ready deployment configuration.
+-   Do not commit `venv/`, `db.sqlite3`, `.env` files, passwords, or
+    secret keys.
+-   Keep `DJANGO_SECRET_KEY` outside source control and use a strong
+    secret value.
+-   Before deployment, disable `DEBUG`, configure `ALLOWED_HOSTS`,
+    HTTPS, secure cookies, and production email settings.
+-   The console email backend is suitable for local testing only.
+    Configure a real email provider before deployment.
+-   Customer login uses a separate customer session key and does not
+    replace the existing admin authentication flow.
+-   Booking history is currently a placeholder; this README does not
+    claim that a complete booking workflow is implemented.

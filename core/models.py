@@ -47,3 +47,20 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+
+
+
+class PasswordResetOTP(models.Model):
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.CASCADE,
+        related_name='password_reset_otps'
+    )
+    otp_hash = models.CharField(max_length=128)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    attempts = models.PositiveSmallIntegerField(default=0)
+
+    def __str__(self):
+        return f"Password Reset OTP - {self.customer.email}"
